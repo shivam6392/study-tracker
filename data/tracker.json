@@ -1,6 +1,6 @@
 {
   "2026-09-01": {
-    "sql_mcq": false,
+    "sql_mcq": true,
     "cloud_mcq": false,
     "word_mcq": false,
     "cn_mcq": false,
