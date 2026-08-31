@@ -1,24 +1,32 @@
 import { Redis } from '@upstash/redis'
 
-// Vercel Upstash Redis integration can use different env var prefixes 
-// depending on how the user configured it. We check all known patterns.
-const redisUrl =
+// Try explicit REST env vars first
+let restUrl =
     process.env.KV_REST_API_URL ||
     process.env.UPSTASH_REDIS_REST_URL ||
-    process.env.STORAGE_URL ||
-    process.env.STORAGE_REST_URL ||
-    process.env.REDIS_URL ||
-    process.env.REDIS_REST_URL;
+    process.env.STORAGE_REST_URL;
 
-const redisToken =
+let restToken =
     process.env.KV_REST_API_TOKEN ||
     process.env.UPSTASH_REDIS_REST_TOKEN ||
-    process.env.STORAGE_REST_TOKEN ||
-    process.env.STORAGE_TOKEN ||
-    process.env.REDIS_TOKEN ||
-    process.env.REDIS_REST_TOKEN;
+    process.env.STORAGE_REST_TOKEN;
 
-const redis = redisUrl && redisToken ? new Redis({ url: redisUrl, token: redisToken }) : null;
+// Fallback: parse the standard REDIS_URL (format: rediss://default:TOKEN@host:port)
+// to extract the REST URL and token
+if (!restUrl || !restToken) {
+    const rawUrl = process.env.REDIS_URL;
+    if (rawUrl) {
+        try {
+            const parsed = new URL(rawUrl);
+            // Upstash REST URL is https://hostname
+            restUrl = restUrl || `https://${parsed.hostname}`;
+            // The password in the URL IS the REST token
+            restToken = restToken || parsed.password;
+        } catch (_) { /* ignore parse errors */ }
+    }
+}
+
+const redis = restUrl && restToken ? new Redis({ url: restUrl, token: restToken }) : null;
 
 const REDIS_KEY = 'study_tracker_data';
 
@@ -27,8 +35,8 @@ export default async function handler(req: any, res: any) {
     if (req.query?.debug === '1') {
         return res.status(200).json({
             connected: !!redis,
-            hasUrl: !!redisUrl,
-            hasToken: !!redisToken,
+            hasUrl: !!restUrl,
+            hasToken: !!restToken,
             envKeysFound: Object.keys(process.env).filter(k =>
                 k.includes('REDIS') || k.includes('KV') || k.includes('STORAGE') || k.includes('UPSTASH')
             )
