@@ -1,17 +1,13 @@
-// Clean, robust serverless API handler for Vercel + Upstash Redis
+// Complete, bulletproof Vercel API Route for Upstash Redis
 
 export default async function handler(req: any, res: any) {
-    // Debug endpoint
-    if (req.query?.debug === '1') {
-        return res.status(200).json({
-            envKeys: Object.keys(process.env).filter(k =>
-                k.includes('REDIS') || k.includes('KV') || k.includes('STORAGE') || k.includes('UPSTASH')
-            ),
-            redisUrl: !!process.env.REDIS_URL,
-            storageUrl: !!process.env.STORAGE_URL,
-            upstashUrl: !!process.env.UPSTASH_REDIS_REST_URL,
-            kvUrl: !!process.env.KV_REST_API_URL,
-        });
+    // CORS Headers for cross-origin peace of mind
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
     }
 
     // Extract REST endpoint and token from any standard Vercel Upstash env configuration
@@ -25,7 +21,7 @@ export default async function handler(req: any, res: any) {
         process.env.UPSTASH_REDIS_REST_TOKEN ||
         process.env.STORAGE_REST_TOKEN || '';
 
-    // Fallback: parse standard REDIS_URL (format: rediss://default:TOKEN@host:port)
+    // Fallback: parse standard REDIS_URL / STORAGE_URL
     if (!restUrl || !restToken) {
         const rawUrl = process.env.REDIS_URL || process.env.STORAGE_URL;
         if (rawUrl) {
@@ -37,22 +33,30 @@ export default async function handler(req: any, res: any) {
         }
     }
 
-    // If database credentials are not present, return empty JSON gracefully
+    // Debug endpoint
+    if (req.query?.debug === '1') {
+        return res.status(200).json({
+            connected: !!(restUrl && restToken),
+            restUrl: restUrl ? restUrl.substring(0, 25) + '...' : null,
+            hasToken: !!restToken,
+        });
+    }
+
     if (!restUrl || !restToken) {
         if (req.method === 'GET') return res.status(200).json({});
-        return res.status(200).json({ success: true, warning: 'Database credentials not found' });
+        return res.status(200).json({ success: true, warning: 'Database credentials missing' });
     }
 
     const REDIS_KEY = 'study_tracker_data';
 
     try {
         if (req.method === 'GET') {
+            // Upstash REST API GET format: GET {url}/get/{key}
             const response = await fetch(`${restUrl}/get/${REDIS_KEY}`, {
                 headers: { Authorization: `Bearer ${restToken}` }
             });
 
             if (!response.ok) {
-                console.error('Upstash GET error HTTP:', response.status);
                 return res.status(200).json({});
             }
 
@@ -63,28 +67,31 @@ export default async function handler(req: any, res: any) {
                 return res.status(200).json({});
             }
 
-            // If data is JSON string, parse it before sending
             if (typeof rawResult === 'string') {
                 try {
                     rawResult = JSON.parse(rawResult);
-                } catch (_) { /* keep as string if not JSON */ }
+                } catch (_) { /* ignore parse error */ }
             }
 
             return res.status(200).json(rawResult);
         }
 
         if (req.method === 'POST') {
-            const bodyString = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+            const bodyData = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
 
-            const response = await fetch(`${restUrl}/set/${REDIS_KEY}`, {
+            // Upstash REST API SET format: POST {url}/set/{key} with body as raw string OR POST {url} with ["SET", key, value]
+            const response = await fetch(`${restUrl}`, {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${restToken}` },
-                body: bodyString
+                headers: {
+                    Authorization: `Bearer ${restToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(["SET", REDIS_KEY, bodyData])
             });
 
             if (!response.ok) {
-                console.error('Upstash SET error HTTP:', response.status);
-                return res.status(500).json({ error: 'Failed to write to database' });
+                console.error('Upstash SET status:', response.status);
+                return res.status(200).json({ success: false });
             }
 
             return res.status(200).json({ success: true });
@@ -92,11 +99,7 @@ export default async function handler(req: any, res: any) {
 
         return res.status(405).json({ error: 'Method Not Allowed' });
     } catch (err: any) {
-        console.error('Handler catch error:', err?.message || err);
-        // Graceful fallback on GET so app loads even if backend errors out
-        if (req.method === 'GET') {
-            return res.status(200).json({});
-        }
-        return res.status(500).json({ error: err?.message || 'Server Error' });
+        console.error('API catch:', err?.message || err);
+        return res.status(200).json({ success: false, error: err?.message });
     }
 }
