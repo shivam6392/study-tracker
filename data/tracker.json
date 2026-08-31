@@ -5,8 +5,8 @@
     "word_mcq": true,
     "cn_mcq": true,
     "os_mcq": true,
-    "cyber_mcq": true,
-    "sql_queries": true,
+    "cyber_mcq": false,
+    "sql_queries": false,
     "dsa": false,
     "html_css_js": false
   },
