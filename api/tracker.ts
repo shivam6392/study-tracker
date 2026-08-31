@@ -3,8 +3,8 @@ import { Redis } from '@upstash/redis'
 // Initialize the Redis client. 
 // Vercel automatically sets KV_REST_API_URL and KV_REST_API_TOKEN 
 // when you link an Upstash Redis (KV) database in your Vercel Dashboard.
-const redisUrl = process.env.KV_REST_API_URL;
-const redisToken = process.env.KV_REST_API_TOKEN;
+const redisUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+const redisToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
 // Only initialize if we have the credentials, so it doesn't crash during local dev without env vars
 const redis = redisUrl && redisToken ? new Redis({ url: redisUrl, token: redisToken }) : null;
