@@ -16,12 +16,26 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         fetch(`/api/tracker?t=${Date.now()}`)
             .then(res => res.json())
             .then((data) => {
+                const initial = generateInitialState();
                 if (data && typeof data === 'object' && !data.error) {
-                    setState({ ...generateInitialState(), ...data });
+                    // Only merge keys that are valid dates (e.g. exist in initialState)
+                    // This prevents GitHub API errors like {"message": "Not Found"} from infecting the state
+                    const cleanData: Partial<TrackerState> = {};
+                    Object.keys(data).forEach(key => {
+                        if (key in initial) {
+                            cleanData[key] = data[key];
+                        }
+                    });
+                    setState({ ...initial, ...cleanData });
                     setHasUnsavedChanges(false);
+                } else {
+                    setState(initial);
                 }
             })
-            .catch(err => console.error('[GitHub DB] Fetch error:', err))
+            .catch(err => {
+                console.error('[GitHub DB] Fetch error:', err);
+                setState(generateInitialState());
+            })
             .finally(() => setIsLoading(false));
     };
 
@@ -73,7 +87,14 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const resetProgress = () => {
         const initialState = generateInitialState();
         setState(initialState);
-        setHasUnsavedChanges(true);
+        setHasUnsavedChanges(false);
+
+        // Immediately try to overwrite GitHub with the empty state
+        fetch('/api/tracker', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(initialState)
+        }).catch(console.error);
     };
 
     return (
