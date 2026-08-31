@@ -1,14 +1,14 @@
 {
   "2026-09-01": {
     "sql_mcq": true,
-    "cloud_mcq": false,
-    "word_mcq": false,
-    "cn_mcq": false,
-    "os_mcq": false,
-    "cyber_mcq": false,
-    "sql_queries": false,
-    "dsa": false,
-    "html_css_js": false
+    "cloud_mcq": true,
+    "word_mcq": true,
+    "cn_mcq": true,
+    "os_mcq": true,
+    "cyber_mcq": true,
+    "sql_queries": true,
+    "dsa": true,
+    "html_css_js": true
   },
   "2026-09-02": {
     "sql_mcq": false,
