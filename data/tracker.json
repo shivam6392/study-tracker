@@ -3,7 +3,7 @@
     "sql_mcq": true,
     "cloud_mcq": true,
     "word_mcq": true,
-    "cn_mcq": true,
+    "cn_mcq": false,
     "os_mcq": true,
     "cyber_mcq": true,
     "sql_queries": false,
