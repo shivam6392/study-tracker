@@ -20,7 +20,7 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 if (data && typeof data === 'object' && !data.error) {
                     // Only merge keys that are valid dates (e.g. exist in initialState)
                     // This prevents GitHub API errors like {"message": "Not Found"} from infecting the state
-                    const cleanData: Partial<TrackerState> = {};
+                    const cleanData: TrackerState = {};
                     Object.keys(data).forEach(key => {
                         if (key in initial) {
                             cleanData[key] = data[key];
