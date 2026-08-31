@@ -5,10 +5,10 @@ import { CalendarNavigation } from './components/CalendarNavigation';
 import { DailyView } from './components/DailyView';
 import { ProgressGraph } from './components/ProgressGraph';
 import { START_DATE, formatDate } from './utils/dateUtils';
-import { RotateCcw, Save, CheckCircle, Loader2 } from 'lucide-react';
+import { RotateCcw, Save, CheckCircle, Loader2, RefreshCw } from 'lucide-react';
 
 const TrackerApp = () => {
-  const { state, resetProgress, saveToGitHub, isSaving, hasUnsavedChanges } = useTracker();
+  const { state, resetProgress, saveToGitHub, syncFromGitHub, isSaving, isSyncing, hasUnsavedChanges } = useTracker();
 
   const today = formatDate(new Date());
   const initialDate = state[today] ? today : START_DATE;
@@ -38,7 +38,17 @@ const TrackerApp = () => {
             <p className="text-slate-400 mt-2 font-medium">Sept 1, 2026 — Sept 25, 2026</p>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 flex-wrap gap-y-2">
+            {/* Sync from GitHub Button */}
+            <button
+              onClick={() => syncFromGitHub()}
+              disabled={isSyncing}
+              className="flex items-center space-x-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all border border-slate-700 shadow-sm"
+            >
+              <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
+              <span className="text-sm font-semibold">{isSyncing ? 'Syncing...' : 'Sync'}</span>
+            </button>
+
             {/* Save to GitHub Button */}
             <button
               onClick={handleSave}
@@ -53,12 +63,12 @@ const TrackerApp = () => {
               {isSaving ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  <span>Saving to GitHub...</span>
+                  <span>Saving...</span>
                 </>
               ) : saveSuccess ? (
                 <>
                   <CheckCircle size={16} />
-                  <span>Saved to GitHub!</span>
+                  <span>Saved!</span>
                 </>
               ) : (
                 <>
@@ -97,7 +107,7 @@ const TrackerApp = () => {
             <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200">
               <h3 className="text-xl font-bold text-white mb-2">Reset all progress?</h3>
               <p className="text-slate-400 mb-6 leading-relaxed">
-                This will reset your local checklist. Click "Save Changes" after resetting if you want to push this to GitHub.
+                This will reset all checkboxes and immediately update GitHub.
               </p>
               <div className="flex justify-end space-x-3">
                 <button
