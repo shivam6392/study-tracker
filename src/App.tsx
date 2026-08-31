@@ -5,16 +5,25 @@ import { CalendarNavigation } from './components/CalendarNavigation';
 import { DailyView } from './components/DailyView';
 import { ProgressGraph } from './components/ProgressGraph';
 import { START_DATE, formatDate } from './utils/dateUtils';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Save, CheckCircle, Loader2 } from 'lucide-react';
 
 const TrackerApp = () => {
-  const { state, resetProgress } = useTracker();
+  const { state, resetProgress, saveToGitHub, isSaving, hasUnsavedChanges } = useTracker();
 
   const today = formatDate(new Date());
   const initialDate = state[today] ? today : START_DATE;
 
   const [selectedDate, setSelectedDate] = useState<string>(initialDate);
   const [showConfirmReset, setShowConfirmReset] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const handleSave = async () => {
+    const ok = await saveToGitHub();
+    if (ok) {
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 pb-20 selection:bg-blue-500/30">
@@ -29,13 +38,45 @@ const TrackerApp = () => {
             <p className="text-slate-400 mt-2 font-medium">Sept 1, 2026 — Sept 25, 2026</p>
           </div>
 
-          <button
-            onClick={() => setShowConfirmReset(true)}
-            className="flex items-center space-x-2 px-4 py-2.5 bg-slate-900 hover:bg-red-950/40 hover:text-red-400 text-slate-300 rounded-xl transition-all border border-slate-800 hover:border-red-500/50 shadow-sm"
-          >
-            <RotateCcw size={16} />
-            <span className="text-sm font-semibold">Reset Data</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            {/* Save to GitHub Button */}
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-md ${saveSuccess
+                  ? 'bg-emerald-600 text-white shadow-emerald-900/40'
+                  : hasUnsavedChanges
+                    ? 'bg-blue-600 hover:bg-blue-500 text-white animate-pulse shadow-blue-900/50'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                }`}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Saving to GitHub...</span>
+                </>
+              ) : saveSuccess ? (
+                <>
+                  <CheckCircle size={16} />
+                  <span>Saved to GitHub!</span>
+                </>
+              ) : (
+                <>
+                  <Save size={16} />
+                  <span>{hasUnsavedChanges ? 'Save Changes' : 'Saved'}</span>
+                </>
+              )}
+            </button>
+
+            {/* Reset Button */}
+            <button
+              onClick={() => setShowConfirmReset(true)}
+              className="flex items-center space-x-2 px-4 py-2.5 bg-slate-900 hover:bg-red-950/40 hover:text-red-400 text-slate-300 rounded-xl transition-all border border-slate-800 hover:border-red-500/50 shadow-sm"
+            >
+              <RotateCcw size={16} />
+              <span className="text-sm font-semibold">Reset</span>
+            </button>
+          </div>
         </header>
 
         <Dashboard />
@@ -56,7 +97,7 @@ const TrackerApp = () => {
             <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200">
               <h3 className="text-xl font-bold text-white mb-2">Reset all progress?</h3>
               <p className="text-slate-400 mb-6 leading-relaxed">
-                This will permanently delete all your tracking data for the 25 days. This action cannot be undone. Are you absolutely sure?
+                This will reset your local checklist. Click "Save Changes" after resetting if you want to push this to GitHub.
               </p>
               <div className="flex justify-end space-x-3">
                 <button
@@ -73,7 +114,7 @@ const TrackerApp = () => {
                   }}
                   className="px-5 py-2.5 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-500 transition-colors shadow-[0_0_20px_rgba(220,38,38,0.4)]"
                 >
-                  Yes, reset everything
+                  Yes, reset
                 </button>
               </div>
             </div>

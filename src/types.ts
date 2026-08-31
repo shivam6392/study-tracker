@@ -16,4 +16,7 @@ export interface TrackerContextType {
     state: TrackerState;
     toggleTask: (dateString: string, taskKey: keyof TaskList) => void;
     resetProgress: () => void;
+    saveToGitHub: () => Promise<boolean>;
+    isSaving: boolean;
+    hasUnsavedChanges: boolean;
 }
