@@ -27,17 +27,26 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     useEffect(() => {
         fetch('/api/tracker')
             .then(res => {
-                if (!res.ok) throw new Error('API Error');
+                if (!res.ok) throw new Error(`API Error: ${res.status}`);
                 return res.json();
             })
-            .then((data) => {
-                if (data && Object.keys(data).length > 0 && !data.error && !data.warning) {
+            .then((raw) => {
+                // Handle double-encoded JSON strings from Redis
+                let data = raw;
+                if (typeof data === 'string') {
+                    try { data = JSON.parse(data); } catch (_) { /* leave as-is */ }
+                }
+
+                if (data && typeof data === 'object' && Object.keys(data).length > 0 && !data.error && !data.warning) {
                     const merged = { ...generateInitialState(), ...data };
                     setState(merged);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+                    console.log('[Tracker] Loaded from cloud:', Object.keys(data).length, 'days');
+                } else {
+                    console.log('[Tracker] No cloud data found, using local');
                 }
             })
-            .catch(console.error)
+            .catch((err) => console.error('[Tracker] Fetch error:', err))
             .finally(() => {
                 setIsSyncing(false);
             });

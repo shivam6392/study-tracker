@@ -11,18 +11,15 @@ let restToken =
     process.env.UPSTASH_REDIS_REST_TOKEN ||
     process.env.STORAGE_REST_TOKEN;
 
-// Fallback: parse the standard REDIS_URL (format: rediss://default:TOKEN@host:port)
-// to extract the REST URL and token
+// Fallback: parse REDIS_URL (format: rediss://default:TOKEN@host:port)
 if (!restUrl || !restToken) {
     const rawUrl = process.env.REDIS_URL;
     if (rawUrl) {
         try {
             const parsed = new URL(rawUrl);
-            // Upstash REST URL is https://hostname
             restUrl = restUrl || `https://${parsed.hostname}`;
-            // The password in the URL IS the REST token
             restToken = restToken || parsed.password;
-        } catch (_) { /* ignore parse errors */ }
+        } catch (_) { /* ignore */ }
     }
 }
 
@@ -31,7 +28,7 @@ const redis = restUrl && restToken ? new Redis({ url: restUrl, token: restToken 
 const REDIS_KEY = 'study_tracker_data';
 
 export default async function handler(req: any, res: any) {
-    // Debug endpoint: GET /api/tracker?debug=1 to check if redis is connected
+    // Debug endpoint
     if (req.query?.debug === '1') {
         return res.status(200).json({
             connected: !!redis,
@@ -43,7 +40,6 @@ export default async function handler(req: any, res: any) {
         });
     }
 
-    // If redis isn't configured, return empty so localStorage still works as fallback
     if (!redis) {
         if (req.method === 'GET') {
             return res.status(200).json({});
@@ -53,7 +49,12 @@ export default async function handler(req: any, res: any) {
 
     if (req.method === 'GET') {
         try {
-            const data = await redis.get(REDIS_KEY);
+            const raw = await redis.get(REDIS_KEY);
+            // Handle both string and object responses from Upstash
+            let data = raw;
+            if (typeof raw === 'string') {
+                try { data = JSON.parse(raw); } catch (_) { data = raw; }
+            }
             return res.status(200).json(data || {});
         } catch (error) {
             console.error('Redis GET error:', error);
@@ -62,6 +63,7 @@ export default async function handler(req: any, res: any) {
     } else if (req.method === 'POST') {
         try {
             const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+            // Store as plain JSON string - redis.set with a string avoids double-encoding
             await redis.set(REDIS_KEY, JSON.stringify(body));
             return res.status(200).json({ success: true });
         } catch (error) {
