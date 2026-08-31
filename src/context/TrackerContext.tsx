@@ -2,93 +2,86 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { TrackerState, TrackerContextType, TaskList } from '../types';
 import { generateInitialState } from '../utils/dateUtils';
 
-const STORAGE_KEY = 'study_tracker_data_2026';
-
 const TrackerContext = createContext<TrackerContextType | undefined>(undefined);
 
 export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [state, setState] = useState<TrackerState>(() => {
-        // Try synchronous local storage first for immediate UI
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                return { ...generateInitialState(), ...parsed };
-            } catch (e) {
-                console.error("Failed to parse local stored data", e);
-            }
-        }
-        return generateInitialState();
-    });
+    // Always initialize with clean default state - NO localStorage cache
+    const [state, setState] = useState<TrackerState>(generateInitialState);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const [isSyncing, setIsSyncing] = useState(true);
+    // 1. Fetch initial state directly from GitHub JSON endpoint with cache-busting timestamp
+    const fetchFromGitHub = () => {
+        fetch(`/api/tracker?t=${Date.now()}`)
+            .then(res => res.json())
+            .then((data) => {
+                if (data && typeof data === 'object' && !data.error) {
+                    setState({ ...generateInitialState(), ...data });
+                }
+            })
+            .catch(err => console.error('[GitHub DB] Fetch error:', err))
+            .finally(() => setIsLoading(false));
+    };
 
-    // Initial load from cloud backend
     useEffect(() => {
-        fetch('/api/tracker')
-            .then(res => {
-                if (!res.ok) throw new Error(`API Error: ${res.status}`);
-                return res.json();
-            })
-            .then((raw) => {
-                // Handle double-encoded JSON strings from Redis
-                let data = raw;
-                if (typeof data === 'string') {
-                    try { data = JSON.parse(data); } catch (_) { /* leave as-is */ }
-                }
-
-                if (data && typeof data === 'object' && Object.keys(data).length > 0 && !data.error && !data.warning) {
-                    const merged = { ...generateInitialState(), ...data };
-                    setState(merged);
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-                    console.log('[Tracker] Loaded from cloud:', Object.keys(data).length, 'days');
-                } else {
-                    console.log('[Tracker] No cloud data found, using local');
-                }
-            })
-            .catch((err) => console.error('[Tracker] Fetch error:', err))
-            .finally(() => {
-                setIsSyncing(false);
-            });
+        fetchFromGitHub();
     }, []);
 
-    // Save to cloud backend when state changes
-    useEffect(() => {
-        if (isSyncing) return; // Don't write during initial load
-
-        // Optimistic local update
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-
-        // Sync to cloud
-        fetch('/api/tracker', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(state)
-        }).catch(console.error);
-
-    }, [state, isSyncing]);
-
+    // 2. Direct toggle: updates React state and sends commit to GitHub JSON database
     const toggleTask = (dateString: string, taskKey: keyof TaskList) => {
         setState((prev) => {
-            const dayTasks = prev[dateString];
-            if (!dayTasks) return prev;
-            return {
+            const currentDay = prev[dateString];
+            if (!currentDay) return prev;
+
+            const updatedState = {
                 ...prev,
                 [dateString]: {
-                    ...dayTasks,
-                    [taskKey]: !dayTasks[taskKey],
+                    ...currentDay,
+                    [taskKey]: !currentDay[taskKey],
                 },
             };
+
+            // Push change directly to GitHub repository database
+            fetch('/api/tracker', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedState)
+            })
+                .then(res => res.json())
+                .then(resData => {
+                    if (resData.warning) {
+                        console.warn('[GitHub DB] Warning:', resData.warning);
+                    } else if (resData.success) {
+                        console.log('[GitHub DB] Successfully committed to data/tracker.json');
+                    }
+                })
+                .catch(err => console.error('[GitHub DB] Save error:', err));
+
+            return updatedState;
         });
     };
 
+    // 3. Reset progress across GitHub repo
     const resetProgress = () => {
-        setState(generateInitialState());
+        const initialState = generateInitialState();
+        setState(initialState);
+
+        fetch('/api/tracker', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(initialState)
+        }).catch(console.error);
     };
 
     return (
         <TrackerContext.Provider value={{ state, toggleTask, resetProgress }}>
-            {children}
+            {isLoading ? (
+                <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400">
+                    <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+                    <p className="font-medium text-slate-300">Syncing with GitHub database...</p>
+                </div>
+            ) : (
+                children
+            )}
         </TrackerContext.Provider>
     );
 };
