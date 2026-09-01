@@ -7,7 +7,7 @@
     "os_mcq": false,
     "cyber_mcq": true,
     "sql_queries": true,
-    "dsa": false,
+    "dsa": true,
     "html_css_js": false
   },
   "2026-09-02": {
