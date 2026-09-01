@@ -4,7 +4,12 @@
 const REPO_OWNER = 'shivam6392';
 const REPO_NAME = 'study-tracker';
 const FILE_PATH = 'data/tracker.json';
-const API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=sister-version`;
+const BRANCH = 'sister-version';
+
+// Base URL (no query params) - used for PUT commits
+const BASE_API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
+// GET URL with ref param to read from the correct branch
+const GET_API_URL = `${BASE_API_URL}?ref=${BRANCH}`;
 
 export default async function handler(req: any, res: any) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -21,24 +26,22 @@ export default async function handler(req: any, res: any) {
 
     if (req.method === 'GET') {
         try {
-            // Use GitHub API (NOT raw.githubusercontent.com) to always get fresh, uncached content
             const headers: Record<string, string> = {
                 'Accept': 'application/vnd.github.v3+json',
                 'User-Agent': 'Vercel-Study-Tracker',
-                'If-None-Match': '', // Bust GitHub API ETag cache
+                'If-None-Match': '',
             };
             if (githubToken) {
                 headers['Authorization'] = `Bearer ${githubToken}`;
             }
 
-            const response = await fetch(API_URL, { headers });
+            const response = await fetch(GET_API_URL, { headers });
 
             if (!response.ok) {
                 return res.status(200).json({});
             }
 
             const fileInfo = await response.json();
-            // GitHub API returns content as base64-encoded string
             const content = Buffer.from(fileInfo.content, 'base64').toString('utf-8');
             const data = JSON.parse(content);
             return res.status(200).json(data || {});
@@ -60,8 +63,8 @@ export default async function handler(req: any, res: any) {
             const bodyData = typeof req.body === 'string' ? req.body : JSON.stringify(req.body, null, 2);
             const contentBase64 = Buffer.from(bodyData).toString('base64');
 
-            // 1. Get current file SHA
-            const getRes = await fetch(API_URL, {
+            // 1. Get current file SHA (use GET_API_URL with ref param)
+            const getRes = await fetch(GET_API_URL, {
                 headers: {
                     'Authorization': `Bearer ${githubToken}`,
                     'Accept': 'application/vnd.github.v3+json',
@@ -75,8 +78,8 @@ export default async function handler(req: any, res: any) {
                 sha = fileInfo.sha;
             }
 
-            // 2. Commit updated JSON file
-            const putRes = await fetch(API_URL, {
+            // 2. Commit updated JSON file (use BASE_API_URL without query params)
+            const putRes = await fetch(BASE_API_URL, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${githubToken}`,
@@ -88,7 +91,7 @@ export default async function handler(req: any, res: any) {
                     message: 'update: sync study tracker progress [skip ci]',
                     content: contentBase64,
                     sha: sha,
-                    branch: 'sister-version'
+                    branch: BRANCH
                 })
             });
 
