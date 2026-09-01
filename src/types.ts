@@ -3,7 +3,6 @@ export interface TaskList {
     cloud_mcq: boolean;
     word_mcq: boolean;
     cn_mcq: boolean;
-    os_mcq: boolean;
     cyber_mcq: boolean;
     sql_queries: boolean;
     dsa: boolean;
