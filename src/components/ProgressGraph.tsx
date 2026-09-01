@@ -2,17 +2,19 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTracker } from '../context/TrackerContext';
 import { calculateDailyScore } from '../utils/statsUtils';
-import { TOTAL_TASKS_PER_DAY } from '../utils/dateUtils';
+import { getTotalTasksForDay } from '../utils/dateUtils';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
 
 export const ProgressGraph: React.FC = () => {
     const { state } = useTracker();
 
     const data = Object.keys(state).sort().map(date => {
-        const score = calculateDailyScore(state[date]);
+        const dayData = state[date];
+        const score = calculateDailyScore(dayData);
+        const dateTotal = getTotalTasksForDay(dayData?.dayType || 'normal');
         return {
             date: date.substring(5), // MM-DD
-            percentage: Number(((score / TOTAL_TASKS_PER_DAY) * 100).toFixed(1)),
+            percentage: dateTotal > 0 ? Number(((score / dateTotal) * 100).toFixed(1)) : 0,
             tooltipDate: date
         };
     });

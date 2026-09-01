@@ -4,7 +4,7 @@
 const REPO_OWNER = 'shivam6392';
 const REPO_NAME = 'study-tracker';
 const FILE_PATH = 'data/tracker.json';
-const API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
+const API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=sister-version`;
 
 export default async function handler(req: any, res: any) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -88,7 +88,7 @@ export default async function handler(req: any, res: any) {
                     message: 'update: sync study tracker progress [skip ci]',
                     content: contentBase64,
                     sha: sha,
-                    branch: 'master'
+                    branch: 'sister-version'
                 })
             });
 

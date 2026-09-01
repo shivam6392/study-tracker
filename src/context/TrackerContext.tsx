@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { TrackerState, TrackerContextType, TaskList } from '../types';
+import type { TrackerState, TrackerContextType, TaskList, DayType } from '../types';
 import { generateInitialState } from '../utils/dateUtils';
 
 const TrackerContext = createContext<TrackerContextType | undefined>(undefined);
@@ -55,7 +55,26 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 ...prev,
                 [dateString]: {
                     ...currentDay,
-                    [taskKey]: !currentDay[taskKey],
+                    tasks: {
+                        ...currentDay.tasks,
+                        [taskKey]: !currentDay.tasks[taskKey],
+                    }
+                },
+            };
+        });
+        setHasUnsavedChanges(true);
+    };
+
+    // Change DayType locally
+    const changeDayType = (dateString: string, dayType: DayType) => {
+        setState((prev) => {
+            const currentDay = prev[dateString];
+            if (!currentDay) return prev;
+            return {
+                ...prev,
+                [dateString]: {
+                    ...currentDay,
+                    dayType
                 },
             };
         });
@@ -98,7 +117,7 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
 
     return (
-        <TrackerContext.Provider value={{ state, toggleTask, resetProgress, saveToGitHub, syncFromGitHub, isSaving, isSyncing, hasUnsavedChanges }}>
+        <TrackerContext.Provider value={{ state, toggleTask, changeDayType, resetProgress, saveToGitHub, syncFromGitHub, isSaving, isSyncing, hasUnsavedChanges }}>
             {isLoading ? (
                 <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400">
                     <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
