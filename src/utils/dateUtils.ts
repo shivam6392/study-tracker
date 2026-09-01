@@ -30,6 +30,7 @@ export function generateInitialState(): Record<string, TaskList> {
             sql_queries: false,
             dsa: false,
             html_css_js: false,
+            scores: {},
         };
         current.setDate(current.getDate() + 1);
     }
@@ -37,7 +38,7 @@ export function generateInitialState(): Record<string, TaskList> {
     return state;
 }
 
-export const TASK_LABELS: Record<keyof TaskList, string> = {
+export const TASK_LABELS: Record<string, string> = {
     sql_mcq: '50 SQL MCQs',
     cloud_mcq: '50 Cloud Computing MCQs',
     word_mcq: '50 MS Word / MS Office MCQs',
@@ -47,5 +48,7 @@ export const TASK_LABELS: Record<keyof TaskList, string> = {
     dsa: '5 DSA Questions',
     html_css_js: '3 Hours of HTML, CSS & JavaScript practice',
 };
+
+export const MCQ_KEYS = ['sql_mcq', 'cloud_mcq', 'word_mcq', 'cn_mcq', 'cyber_mcq'];
 
 export const TOTAL_TASKS_PER_DAY = Object.keys(TASK_LABELS).length;

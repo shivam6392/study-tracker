@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTracker } from '../context/TrackerContext';
-import { TASK_LABELS, TOTAL_TASKS_PER_DAY } from '../utils/dateUtils';
+import { TASK_LABELS, TOTAL_TASKS_PER_DAY, MCQ_KEYS } from '../utils/dateUtils';
 import { calculateDailyScore } from '../utils/statsUtils';
 import { Checkbox } from './ui/Checkbox';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
@@ -11,7 +11,7 @@ interface DailyViewProps {
 }
 
 export const DailyView: React.FC<DailyViewProps> = ({ selectedDate }) => {
-    const { state, toggleTask } = useTracker();
+    const { state, toggleTask, setScore } = useTracker();
 
     const tasks = state[selectedDate];
     if (!tasks) return null;
@@ -43,14 +43,33 @@ export const DailyView: React.FC<DailyViewProps> = ({ selectedDate }) => {
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col space-y-2">
-                        {(Object.keys(TASK_LABELS) as Array<keyof TaskList>).map((key) => (
-                            <Checkbox
-                                key={key}
-                                label={TASK_LABELS[key]}
-                                checked={tasks[key]}
-                                onChange={() => toggleTask(selectedDate, key)}
-                            />
-                        ))}
+                        {(Object.keys(TASK_LABELS) as Array<keyof TaskList>).map((key) => {
+                            const isMCQ = MCQ_KEYS.includes(key);
+                            const isChecked = tasks[key] === true;
+                            const currentScore = tasks.scores?.[key] ?? '';
+                            return (
+                                <div key={key} className="flex flex-col space-y-2 p-1">
+                                    <Checkbox
+                                        label={TASK_LABELS[key]}
+                                        checked={isChecked}
+                                        onChange={() => toggleTask(selectedDate, key)}
+                                    />
+                                    {isMCQ && isChecked && (
+                                        <div className="ml-8 flex items-center space-x-3 bg-slate-800/40 p-2 rounded-lg border border-slate-700/50 w-fit">
+                                            <span className="text-sm font-medium text-slate-300">Marks Scored (out of 50):</span>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="50"
+                                                value={currentScore}
+                                                onChange={(e) => setScore(selectedDate, key, Number(e.target.value))}
+                                                className="w-16 px-2 py-1 bg-slate-900 border border-slate-600 rounded-md text-emerald-400 font-bold text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </CardContent>
             </Card>

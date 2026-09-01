@@ -62,6 +62,27 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setHasUnsavedChanges(true);
     };
 
+    // Set score for a specific task
+    const setScore = (dateString: string, taskKey: string, score: number) => {
+        setState((prev) => {
+            const currentDay = prev[dateString];
+            if (!currentDay) return prev;
+
+            const currentScores = currentDay.scores || {};
+            return {
+                ...prev,
+                [dateString]: {
+                    ...currentDay,
+                    scores: {
+                        ...currentScores,
+                        [taskKey]: score,
+                    },
+                },
+            };
+        });
+        setHasUnsavedChanges(true);
+    };
+
     // Manual save to GitHub
     const saveToGitHub = async (): Promise<boolean> => {
         setIsSaving(true);
@@ -98,7 +119,7 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
 
     return (
-        <TrackerContext.Provider value={{ state, toggleTask, resetProgress, saveToGitHub, syncFromGitHub, isSaving, isSyncing, hasUnsavedChanges }}>
+        <TrackerContext.Provider value={{ state, toggleTask, setScore, resetProgress, saveToGitHub, syncFromGitHub, isSaving, isSyncing, hasUnsavedChanges }}>
             {isLoading ? (
                 <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400">
                     <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
