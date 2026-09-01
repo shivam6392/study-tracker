@@ -2,7 +2,7 @@
   "2026-09-01": {
     "sql_mcq": true,
     "cloud_mcq": true,
-    "word_mcq": false,
+    "word_mcq": true,
     "cn_mcq": true,
     "os_mcq": false,
     "cyber_mcq": true,
@@ -13,7 +13,8 @@
       "cyber_mcq": 41,
       "cloud_mcq": 44,
       "cn_mcq": 40,
-      "sql_mcq": 37
+      "sql_mcq": 37,
+      "word_mcq": 46
     }
   },
   "2026-09-02": {
