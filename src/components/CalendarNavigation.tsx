@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { useTracker } from '../context/TrackerContext';
 import { cn } from '../lib/utils';
-import { formatDate, getTotalTasksForDay } from '../utils/dateUtils';
+import { formatDate, TOTAL_TASKS_PER_DAY } from '../utils/dateUtils';
 import { calculateDailyScore } from '../utils/statsUtils';
 
 interface CalendarNavigationProps {
@@ -47,14 +47,9 @@ export const CalendarNavigation: React.FC<CalendarNavigationProps> = ({ selected
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 {dates.map((date, index) => {
-                    const dayData = state[date];
-                    if (!dayData) return null;
-
-                    const score = calculateDailyScore(dayData);
-                    const dateTotal = getTotalTasksForDay(dayData.dayType);
-
-                    const isCompleted = score === dateTotal && dateTotal > 0;
-                    const isPartially = score > 0 && score < dateTotal;
+                    const score = calculateDailyScore(state[date]);
+                    const isCompleted = score === TOTAL_TASKS_PER_DAY;
+                    const isPartially = score > 0 && score < TOTAL_TASKS_PER_DAY;
 
                     let statusColor = "bg-slate-800/60 border-slate-700/50 text-slate-400";
                     if (isCompleted) statusColor = "bg-emerald-500/10 border-emerald-500/50 text-emerald-400";
