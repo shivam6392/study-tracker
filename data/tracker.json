@@ -24,7 +24,7 @@
     "cn_mcq": false,
     "os_mcq": false,
     "cyber_mcq": false,
-    "sql_queries": false,
+    "sql_queries": true,
     "dsa": true,
     "html_css_js": false
   },
