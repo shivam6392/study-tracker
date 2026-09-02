@@ -20,13 +20,16 @@
   "2026-09-02": {
     "sql_mcq": false,
     "cloud_mcq": false,
-    "word_mcq": false,
+    "word_mcq": true,
     "cn_mcq": false,
     "os_mcq": false,
     "cyber_mcq": false,
     "sql_queries": true,
     "dsa": true,
-    "html_css_js": false
+    "html_css_js": false,
+    "scores": {
+      "word_mcq": 31
+    }
   },
   "2026-09-03": {
     "sql_mcq": false,
