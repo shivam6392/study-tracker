@@ -23,12 +23,13 @@
     "word_mcq": true,
     "cn_mcq": false,
     "os_mcq": false,
-    "cyber_mcq": false,
+    "cyber_mcq": true,
     "sql_queries": true,
     "dsa": true,
     "html_css_js": false,
     "scores": {
-      "word_mcq": 31
+      "word_mcq": 31,
+      "cyber_mcq": 35
     }
   },
   "2026-09-03": {
