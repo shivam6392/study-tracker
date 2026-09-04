@@ -51,7 +51,7 @@
     "os_mcq": false,
     "cyber_mcq": false,
     "sql_queries": false,
-    "dsa": false,
+    "dsa": true,
     "html_css_js": false
   },
   "2026-09-05": {
